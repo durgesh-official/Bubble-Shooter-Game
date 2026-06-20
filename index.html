@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>बबल शूटर Deluxe (Fullscreen)</title>
+    <style>
+        html, body {
+            height: 100%; /* Needed for fullscreen to potentially take up all space */
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #4A5A6A, #2C3E50);
+            color: #ecf0f1;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #game-wrapper {
+            padding: 10px;
+            background-color: rgba(0,0,0,0.1);
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+        }
+        #game-container {
+            position: relative;
+            border: 2px solid #5C6B73;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            background-color: #34495e;
+            border-radius: 10px;
+            overflow: hidden;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        #ui-elements {
+            margin-top: 15px;
+            text-align: center;
+            display: flex;
+            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+            justify-content: center; /* Center items when wrapped */
+            align-items: center;
+            gap: 10px; /* Spacing between UI elements */
+            width: 95%;
+            max-width: 450px; /* Limit UI width */
+        }
+        #score-container {
+            background-color: rgba(0,0,0,0.2);
+            padding: 8px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            flex-grow: 1; /* Allow score to take available space */
+            text-align: center;
+        }
+        #score {
+            font-size: 1.5em; /* Adjusted for better fit with more buttons */
+            font-weight: bold;
+            color: #FFD700;
+        }
+        button {
+            color: white;
+            border: none;
+            padding: 10px 18px; /* Adjusted padding */
+            font-size: 1em;    /* Adjusted font size */
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 0 #96281B, 0 5px 10px rgba(0,0,0,0.3);
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+        }
+        button:hover {
+            box-shadow: 0 2px 0 #96281B, 0 3px 5px rgba(0,0,0,0.4);
+            transform: translateY(2px);
+        }
+        button:active {
+            box-shadow: 0 0px 0 #96281B, 0 1px 2px rgba(0,0,0,0.4);
+            transform: translateY(4px);
+        }
+        #restart-button-main {
+             background: linear-gradient(to bottom, #e74c3c, #c0392b); /* Red */
+        }
+        #restart-button-main:hover { background: linear-gradient(to bottom, #c0392b, #e74c3c); }
+
+        #fullscreen-button {
+            background: linear-gradient(to bottom, #3498db, #2980b9); /* Blue */
+            box-shadow: 0 4px 0 #1A5276, 0 5px 10px rgba(0,0,0,0.3);
+        }
+        #fullscreen-button:hover {
+            background: linear-gradient(to bottom, #2980b9, #3498db);
+            box-shadow: 0 2px 0 #1A5276, 0 3px 5px rgba(0,0,0,0.4);
+        }
+         #fullscreen-button:active {
+            box-shadow: 0 0px 0 #1A5276, 0 1px 2px rgba(0,0,0,0.4);
+        }
+
+
+        #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 10;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #game-over-screen h2 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            color: #e74c3c;
+            text-shadow: 2px 2px 3px rgba(0,0,0,0.5);
+        }
+        #game-over-screen p {
+            font-size: 1.5em;
+            margin-bottom: 25px;
+        }
+        #game-over-screen button { /* Restart button on game over screen */
+            background: linear-gradient(to bottom, #2ecc71, #27ae60);
+            box-shadow: 0 4px 0 #1E8449, 0 5px 10px rgba(0,0,0,0.3);
+        }
+        #game-over-screen button:hover {
+            background: linear-gradient(to bottom, #27ae60, #2ecc71);
+            box-shadow: 0 2px 0 #1E8449, 0 3px 5px rgba(0,0,0,0.4);
+        }
+        #game-over-screen button:active {
+            box-shadow: 0 0px 0 #1E8449, 0 1px 2px rgba(0,0,0,0.4);
+        }
+        .next-bubble-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.9em;
+            color: #bdc3c7;
+        }
+        .next-bubble-area span {
+            margin-bottom: 5px;
+        }
+
+        /* Fullscreen specific styles */
+        body:fullscreen #game-wrapper,
+        body:-webkit-full-screen #game-wrapper, /* Safari */
+        body:-moz-full-screen #game-wrapper { /* Firefox */
+            /* Optionally, make the game wrapper take more space in fullscreen */
+            /* width: 100%; height: 100%; padding:0; */
+        }
+
+    </style>
+</head>
+<body>
+    <div id="game-wrapper">
+        <div id="game-container">
+            <canvas id="gameCanvas"></canvas>
+            <div id="game-over-screen">
+                <h2>खेल समाप्त!</h2>
+                <p id="final-score">आपका स्कोर: 0</p>
+                <button id="restart-button-gameover">फिर से खेलें</button>
+            </div>
+        </div>
+    </div>
+    <div id="ui-elements">
+        <div id="score-container">
+            <span id="score">स्कोर: 0</span>
+        </div>
+        <div class="next-bubble-area">
+            <span>अगला:</span>
+            <canvas id="nextBubbleCanvas" width="50" height="50"></canvas>
+        </div>
+        <button id="restart-button-main">रीसेट</button>
+        <button id="fullscreen-button">फ़ुलस्क्रीन</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const nextBubbleCanvas = document.getElementById('nextBubbleCanvas');
+        const nextBubbleCtx = nextBubbleCanvas.getContext('2d');
+
+        const scoreDisplay = document.getElementById('score');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartButtonGameOver = document.getElementById('restart-button-gameover');
+        const restartButtonMain = document.getElementById('restart-button-main');
+        const fullscreenButton = document.getElementById('fullscreen-button'); // Fullscreen button
+
+        let BUBBLE_RADIUS;
+        let GRID_COLS;
+        let GRID_ROWS = 11;
+        const TOTAL_GRID_ROWS = 15; 
+        
+        const BUBBLE_COLORS = ['#FF5252', '#448AFF', '#00C853', '#FFD600', '#AA00FF', '#FF6D00'];
+
+        let grid = [];
+        let shooterBubble;
+        let nextBubbleColor;
+        let score = 0;
+        let isShooting = false;
+        let gameOver = false;
+        let shotsFired = 0;
+        const SHOTS_BEFORE_NEW_ROW = 5;
+
+        let aimAngle = -Math.PI / 2;
+        
+        function setCanvasSize() {
+            const gameWrapper = document.getElementById('game-wrapper');
+            let availableWidth, availableHeight;
+
+            if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
+                availableWidth = window.screen.width;
+                availableHeight = window.screen.height;
+                gameWrapper.style.height = '100vh'; // Make wrapper take full viewport height in fullscreen
+                gameWrapper.style.display = 'flex';
+                gameWrapper.style.flexDirection = 'column';
+                gameWrapper.style.justifyContent = 'center';
+            } else {
+                availableWidth = window.innerWidth;
+                availableHeight = window.innerHeight;
+                gameWrapper.style.height = 'auto'; // Reset wrapper height
+                gameWrapper.style.display = 'block'; // Reset display
+            }
+
+            const uiHeightEstimate = document.getElementById('ui-elements').offsetHeight + 30; // Approx height for UI elements + margin
+
+            if (availableWidth < 400) {
+                BUBBLE_RADIUS = Math.min(15, availableWidth / (2 * 9.5));
+                GRID_COLS = 9;
+            } else if (availableWidth < 768) {
+                BUBBLE_RADIUS = Math.min(20, availableWidth / (2 * 10.5));
+                GRID_COLS = 10;
+            } else {
+                BUBBLE_RADIUS = Math.min(25, availableWidth / (2 * 11.5));
+                GRID_COLS = 11;
+            }
+            
+            canvas.width = GRID_COLS * BUBBLE_RADIUS * 2;
+            const maxCanvasHeight = availableHeight - uiHeightEstimate - (document.fullscreenElement ? 0 : 40); // Less margin if not fullscreen
+            canvas.height = Math.min((GRID_ROWS + 1.5) * BUBBLE_RADIUS * 2, maxCanvasHeight);
+            GRID_ROWS = Math.max(5, Math.floor((canvas.height / (BUBBLE_RADIUS * 1.75)) - 1.5)); // Ensure GRID_ROWS is positive and uses hex spacing
+
+            const gameContainer = document.getElementById('game-container');
+            gameContainer.style.width = canvas.width + 'px';
+            gameContainer.style.height = canvas.height + 'px';
+
+            nextBubbleCanvas.width = BUBBLE_RADIUS * 2.5;
+            nextBubbleCanvas.height = BUBBLE_RADIUS * 2.5;
+
+            // Reposition shooter if exists
+            if (shooterBubble) {
+                shooterBubble.x = canvas.width / 2;
+                shooterBubble.y = canvas.height - BUBBLE_RADIUS * 1.5;
+                shooterBubble.radius = BUBBLE_RADIUS; // Update radius in case it changed
+            }
+            // Redraw next bubble
+            drawNextBubble();
+        }
+
+
+        class Bubble {
+            constructor(x, y, radius, color, dx = 0, dy = 0, row = -1, col = -1) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.color = color;
+                this.dx = dx;
+                this.dy = dy;
+                this.row = row;
+                this.col = col;
+                this.isFalling = false;
+                this.popping = false;
+                this.popAnimation = 0;
+            }
+
+            draw(context = ctx) {
+                if (this.popping && this.popAnimation > 1) return;
+
+                context.beginPath();
+                const gradient = context.createRadialGradient(
+                    this.x - this.radius * 0.2, this.y - this.radius * 0.3, this.radius * 0.1,
+                    this.x, this.y, this.radius
+                );
+                gradient.addColorStop(0, 'rgba(255,255,255,0.8)');
+                gradient.addColorStop(0.5, this.color);
+                gradient.addColorStop(1, this.color);
+                context.fillStyle = gradient;
+                
+                let currentRadius = this.radius;
+                if (this.popping) {
+                    currentRadius = this.radius * (1 - this.popAnimation);
+                    this.popAnimation += 0.1;
+                }
+                context.arc(this.x, this.y, Math.max(0, currentRadius * 0.95), 0, Math.PI * 2); // Ensure radius not negative
+                context.fill();
+
+                context.beginPath();
+                context.arc(
+                    this.x - this.radius * 0.35, 
+                    this.y - this.radius * 0.4, 
+                    this.radius * 0.15, 
+                    0, Math.PI * 2
+                );
+                context.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                if (!this.popping || currentRadius > 0) context.fill(); // Don't draw highlight if bubble is too small
+                
+                context.closePath();
+            }
+
+            update() {
+                if (this.isFalling) {
+                    this.dy += 0.5; 
+                    this.y += this.dy;
+                } else if (!this.popping) {
+                    this.x += this.dx;
+                    this.y += this.dy;
+                }
+            }
+        }
+
+        function getRandomColor() {
+            const activeColors = new Set();
+            for (let r = 0; r < TOTAL_GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if (grid[r] && grid[r][c] && !grid[r][c].popping) {
+                        activeColors.add(grid[r][c].color);
+                    }
+                }
+            }
+            if (activeColors.size > 0) {
+                const colorsArray = Array.from(activeColors);
+                return colorsArray[Math.floor(Math.random() * colorsArray.length)];
+            }
+            return BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)];
+        }
+
+        function initGrid(fullReset = true) { // fullReset parameter
+            if (fullReset) { // Only reset grid if fullReset is true
+                grid = [];
+                for (let r = 0; r < TOTAL_GRID_ROWS; r++) {
+                    grid[r] = [];
+                    for (let c = 0; c < GRID_COLS; c++) {
+                        if (r < 5) { 
+                            const x = getBubbleX(c, r);
+                            const y = getBubbleY(r);
+                            grid[r][c] = new Bubble(x, y, BUBBLE_RADIUS, BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)], 0, 0, r, c);
+                        } else {
+                            grid[r][c] = null;
+                        }
+                    }
+                }
+            } else { // If not a full reset (e.g. on resize), just update positions and radii
+                for (let r = 0; r < TOTAL_GRID_ROWS; r++) {
+                    for (let c = 0; c < GRID_COLS; c++) {
+                        if (grid[r] && grid[r][c]) {
+                            grid[r][c].x = getBubbleX(c,r);
+                            grid[r][c].y = getBubbleY(r);
+                            grid[r][c].radius = BUBBLE_RADIUS;
+                        }
+                    }
+                }
+            }
+        }
+        
+        function getBubbleX(col, row) {
+            return col * BUBBLE_RADIUS * 2 + BUBBLE_RADIUS + ((row % 2 === 0) ? 0 : BUBBLE_RADIUS);
+        }
+        function getBubbleY(row) {
+            return row * BUBBLE_RADIUS * 1.75 + BUBBLE_RADIUS;
+        }
+
+
+        function createShooterBubble() {
+            const x = canvas.width / 2;
+            const y = canvas.height - BUBBLE_RADIUS * 1.5; // Position at bottom
+            if (!nextBubbleColor) nextBubbleColor = getRandomColor(); // Ensure nextBubbleColor is set
+            shooterBubble = new Bubble(x, y, BUBBLE_RADIUS, nextBubbleColor);
+            nextBubbleColor = getRandomColor();
+            drawNextBubble();
+        }
+
+        function drawNextBubble() {
+            nextBubbleCtx.clearRect(0,0, nextBubbleCanvas.width, nextBubbleCanvas.height);
+            if (nextBubbleColor) {
+                const tempBubble = new Bubble(
+                    nextBubbleCanvas.width / 2, 
+                    nextBubbleCanvas.height / 2, 
+                    BUBBLE_RADIUS, // Use current BUBBLE_RADIUS
+                    nextBubbleColor
+                );
+                tempBubble.draw(nextBubbleCtx);
+            }
+        }
+        
+        function drawGrid() {
+            for (let r = 0; r < TOTAL_GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                     // Only draw if within visible canvas area, especially y-coordinate
+                    if (grid[r] && grid[r][c] && grid[r][c].y < canvas.height + BUBBLE_RADIUS) {
+                        grid[r][c].draw();
+                    }
+                }
+            }
+        }
+        
+        function drawShooter() {
+            if (shooterBubble) shooterBubble.draw();
+        }
+
+        function drawAimLine() {
+            if (gameOver || isShooting || !shooterBubble) return;
+            ctx.beginPath();
+            ctx.moveTo(shooterBubble.x, shooterBubble.y);
+            const lineLength = canvas.height * 0.7; 
+            const endX = shooterBubble.x + lineLength * Math.cos(aimAngle);
+            const endY = shooterBubble.y + lineLength * Math.sin(aimAngle);
+            
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([BUBBLE_RADIUS*0.3, BUBBLE_RADIUS*0.3]);
+            ctx.stroke();
+            ctx.setLineDash([]); 
+            ctx.closePath();
+        }
+
+        function getGridCoordinates(pixelX, pixelY) {
+            const approxRow = (pixelY - BUBBLE_RADIUS) / (BUBBLE_RADIUS * 1.75);
+            const row = Math.round(approxRow);
+            let approxCol;
+            if (row % 2 === 0) {
+                approxCol = (pixelX - BUBBLE_RADIUS) / (BUBBLE_RADIUS * 2);
+            } else {
+                approxCol = (pixelX - BUBBLE_RADIUS * 2) / (BUBBLE_RADIUS * 2);
+            }
+            const col = Math.round(approxCol);
+            return { row: Math.max(0, Math.min(TOTAL_GRID_ROWS -1, row)), 
+                     col: Math.max(0, Math.min(GRID_COLS -1, col)) };
+        }
+
+        function snapToGrid(bubble) {
+            let minDistance = Infinity;
+            let snapPos = null;
+            const { row: hitRow, col: hitCol } = getGridCoordinates(bubble.x, bubble.y);
+
+            for (let r_offset = -2; r_offset <= 2; r_offset++) { // Increased search radius
+                for (let c_offset = -2; c_offset <= 2; c_offset++) {
+                    const r = hitRow + r_offset;
+                    const c = hitCol + c_offset;
+
+                    if (r >= 0 && r < TOTAL_GRID_ROWS && c >= 0 && c < GRID_COLS) {
+                        if (!grid[r] || !grid[r][c]) {
+                            const targetX = getBubbleX(c, r);
+                            const targetY = getBubbleY(r);
+                            const dist = Math.hypot(bubble.x - targetX, bubble.y - targetY);
+
+                            if (dist < minDistance && dist < BUBBLE_RADIUS * 2.8) { // Slightly larger snap radius
+                                let canSnapHere = (r === 0);
+                                if (!canSnapHere) {
+                                    const neighbors = getHexNeighbors(r, c);
+                                    for (const n of neighbors) {
+                                        if (grid[n.row] && grid[n.row][n.col] && !grid[n.row][n.col].popping) {
+                                            canSnapHere = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (canSnapHere) {
+                                    minDistance = dist;
+                                    snapPos = { row: r, col: c, x: targetX, y: targetY };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (!snapPos) { // Fallback
+                const r = Math.max(0, Math.min(TOTAL_GRID_ROWS - 1, hitRow));
+                const c = Math.max(0, Math.min(GRID_COLS -1, hitCol));
+                 if(!grid[r] || !grid[r][c]) {
+                    snapPos = { row: r, col: c, x: getBubbleX(c,r), y: getBubbleY(r) };
+                } else {
+                    const neighbors = getHexNeighbors(r,c);
+                    for (const n of neighbors) {
+                        if (n.row >= 0 && n.row < TOTAL_GRID_ROWS && n.col >= 0 && n.col < GRID_COLS && (!grid[n.row] || !grid[n.row][n.col])) {
+                            snapPos = { row: n.row, col: n.col, x: getBubbleX(n.col, n.row), y: getBubbleY(n.row) };
+                            break;
+                        }
+                    }
+                     if(!snapPos) {
+                        console.warn("Fallback snap: Snapping to calculated impact point.");
+                        snapPos = { row: r, col: c, x: getBubbleX(c,r), y: getBubbleY(r) };
+                     }
+                }
+            }
+
+            if (snapPos) {
+                bubble.row = snapPos.row;
+                bubble.col = snapPos.col;
+                bubble.x = snapPos.x;
+                bubble.y = snapPos.y;
+
+                if (bubble.row >= 0 && bubble.row < TOTAL_GRID_ROWS && bubble.col >=0 && bubble.col < GRID_COLS) {
+                    if(!grid[snapPos.row]) grid[snapPos.row] = []; // Ensure row exists
+                    grid[snapPos.row][snapPos.col] = bubble;
+                } else {
+                    triggerGameOver(); return;
+                }
+
+                if (snapPos.row >= GRID_ROWS -1 && getBubbleY(snapPos.row) + BUBBLE_RADIUS >= canvas.height - BUBBLE_RADIUS * 3) { 
+                    triggerGameOver(); return;
+                }
+                
+                const matchedBubbles = findMatches(snapPos.row, snapPos.col);
+                if (matchedBubbles.length >= 3) {
+                    removeBubbles(matchedBubbles);
+                    setTimeout(() => removeFloatingBubbles(), 100); // Delay to allow pop animation
+                    score += matchedBubbles.length * 10;
+                } else {
+                    shotsFired++;
+                    if (shotsFired >= SHOTS_BEFORE_NEW_ROW) {
+                        addNewRow();
+                        shotsFired = 0;
+                    }
+                }
+            } else {
+                triggerGameOver(); 
+            }
+        }
+        
+        function getHexNeighbors(row, col) {
+            const neighbors = [];
+            const evenRowDirs = [ { dr: 0, dc: -1 }, { dr: 0, dc: 1 }, { dr: -1, dc: 0 }, { dr: -1, dc: -1 }, { dr: 1, dc: 0 }, { dr: 1, dc: -1 }];
+            const oddRowDirs = [ { dr: 0, dc: -1 }, { dr: 0, dc: 1 }, { dr: -1, dc: 0 }, { dr: -1, dc: 1 }, { dr: 1, dc: 0 }, { dr: 1, dc: 1 }];
+            const dirs = (row % 2 === 0) ? evenRowDirs : oddRowDirs;
+            for (const dir of dirs) {
+                const nr = row + dir.dr;
+                const nc = col + dir.dc;
+                if (nr >= 0 && nr < TOTAL_GRID_ROWS && nc >= 0 && nc < GRID_COLS) {
+                    neighbors.push({row: nr, col: nc});
+                }
+            }
+            return neighbors;
+        }
+
+        function findMatches(startRow, startCol) {
+            if (!grid[startRow] || !grid[startRow][startCol] || grid[startRow][startCol].popping) return [];
+            const colorToMatch = grid[startRow][startCol].color;
+            const q = [{row: startRow, col: startCol}];
+            const matched = [];
+            const visited = new Set();
+            visited.add(`${startRow}-${startCol}`);
+            while (q.length > 0) {
+                const current = q.shift();
+                matched.push(current);
+                const neighbors = getHexNeighbors(current.row, current.col);
+                for (const n of neighbors) {
+                    const key = `${n.row}-${n.col}`;
+                    if (grid[n.row] && grid[n.row][n.col] && !grid[n.row][n.col].popping &&
+                        grid[n.row][n.col].color === colorToMatch && !visited.has(key)) {
+                        visited.add(key);
+                        q.push(n);
+                    }
+                }
+            }
+            return matched;
+        }
+        
+        function removeBubbles(bubblesToRemove) {
+            bubblesToRemove.forEach(b => {
+                if (grid[b.row] && grid[b.row][b.col]) {
+                    grid[b.row][b.col].popping = true;
+                    grid[b.row][b.col].popAnimation = 0;
+                }
+            });
+        }
+
+        function removeFloatingBubbles() {
+            const supported = new Set();
+            const q = [];
+            for (let c = 0; c < GRID_COLS; c++) {
+                if (grid[0] && grid[0][c] && !grid[0][c].popping) {
+                    q.push({row: 0, col: c});
+                    supported.add(`0-${c}`);
+                }
+            }
+            while(q.length > 0) {
+                const current = q.shift();
+                const neighbors = getHexNeighbors(current.row, current.col);
+                for (const n of neighbors) {
+                    const key = `${n.row}-${n.col}`;
+                    if (grid[n.row] && grid[n.row][n.col] && !grid[n.row][n.col].popping && !supported.has(key)) {
+                        supported.add(key);
+                        q.push(n);
+                    }
+                }
+            }
+            const floating = [];
+            for (let r = 0; r < TOTAL_GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if (grid[r] && grid[r][c] && !grid[r][c].popping && !supported.has(`${r}-${c}`)) {
+                        floating.push({row: r, col: c});
+                        score += 5;
+                    }
+                }
+            }
+            if (floating.length > 0) removeBubbles(floating);
+        }
+        
+        function addNewRow() {
+            for (let c = 0; c < GRID_COLS; c++) {
+                if (grid[GRID_ROWS - 1] && grid[GRID_ROWS - 1][c] && !grid[GRID_ROWS - 1][c].popping) {
+                     triggerGameOver(); return;
+                }
+            }
+            for (let r = TOTAL_GRID_ROWS - 1; r > 0; r--) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if(!grid[r]) grid[r] = []; // Ensure row exists
+                    grid[r][c] = grid[r-1] ? grid[r-1][c] : null;
+                    if (grid[r][c]) {
+                        grid[r][c].row = r;
+                        grid[r][c].y = getBubbleY(r);
+                        grid[r][c].x = getBubbleX(c,r);
+                    }
+                }
+            }
+            if(!grid[0]) grid[0] = []; // Ensure row 0 exists
+            for (let c = 0; c < GRID_COLS; c++) {
+                const x = getBubbleX(c,0);
+                const y = getBubbleY(0);
+                grid[0][c] = new Bubble(x, y, BUBBLE_RADIUS, BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)], 0, 0, 0, c);
+            }
+            for (let c = 0; c < GRID_COLS; c++) {
+                if (grid[GRID_ROWS - 1] && grid[GRID_ROWS - 1][c] && !grid[GRID_ROWS - 1][c].popping) {
+                     triggerGameOver(); return;
+                }
+            }
+        }
+
+        function checkCollisions() {
+            if (!shooterBubble) return;
+            if (shooterBubble.x - shooterBubble.radius < 0 || shooterBubble.x + shooterBubble.radius > canvas.width) {
+                shooterBubble.dx *= -1;
+                if (shooterBubble.x - shooterBubble.radius < 0) shooterBubble.x = shooterBubble.radius;
+                if (shooterBubble.x + shooterBubble.radius > canvas.width) shooterBubble.x = canvas.width - shooterBubble.radius;
+            }
+            if (shooterBubble.y - shooterBubble.radius < getBubbleY(0)) {
+                shooterBubble.y = getBubbleY(0) + shooterBubble.radius * 0.1;
+                stopShootingAndSnap(); return;
+            }
+            for (let r = 0; r < TOTAL_GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const bubble = grid[r] ? grid[r][c] : null;
+                    if (bubble && !bubble.popping) {
+                        const dist = Math.hypot(shooterBubble.x - bubble.x, shooterBubble.y - bubble.y);
+                        if (dist < shooterBubble.radius + bubble.radius - (BUBBLE_RADIUS*0.15) ) { // Adjusted collision threshold
+                            stopShootingAndSnap(); return;
+                        }
+                    }
+                }
+            }
+        }
+        
+        function stopShootingAndSnap() {
+            isShooting = false;
+            shooterBubble.dx = 0;
+            shooterBubble.dy = 0;
+            snapToGrid(shooterBubble);
+            if (!gameOver) {
+                createShooterBubble();
+            } else {
+                shooterBubble = null;
+            }
+        }
+
+        function updateScore() {
+            scoreDisplay.textContent = `स्कोर: ${score}`;
+        }
+
+        function triggerGameOver() {
+            if (gameOver) return;
+            gameOver = true;
+            isShooting = false; 
+            finalScoreDisplay.textContent = `आपका स्कोर: ${score}`;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function restartGame(fullReset = true) { // Added fullReset
+            if (!fullReset) { // If not a full reset, just resize and continue
+                setCanvasSize();
+                initGrid(false); // Update existing grid elements' sizes and positions
+                // Shooter and next bubble are handled by setCanvasSize and createShooterBubble if needed
+                if(!shooterBubble && !gameOver) createShooterBubble();
+                if(nextBubbleColor) drawNextBubble();
+                return;
+            }
+            // Full reset
+            score = 0;
+            shotsFired = 0;
+            gameOver = false;
+            isShooting = false;
+            gameOverScreen.style.display = 'none';
+            setCanvasSize(); 
+            initGrid(true); // Full grid initialization
+            nextBubbleColor = getRandomColor();
+            createShooterBubble(); 
+            updateScore();
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            gameLoop();
+        }
+
+        function handleAim(event) {
+            if (gameOver || isShooting || !shooterBubble) return;
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+            if (event.touches) { clientX = event.touches[0].clientX; clientY = event.touches[0].clientY; }
+            else { clientX = event.clientX; clientY = event.clientY; }
+            const mouseX = clientX - rect.left;
+            const mouseY = clientY - rect.top;
+            const dx = mouseX - shooterBubble.x;
+            const dy = mouseY - shooterBubble.y;
+            aimAngle = Math.atan2(dy, dx);
+            const minAngle = -Math.PI * 0.9; const maxAngle = -Math.PI * 0.1; 
+            aimAngle = Math.max(minAngle, Math.min(maxAngle, aimAngle));
+        }
+
+        function handleShoot(event) {
+            if (gameOver || isShooting || !shooterBubble) return;
+            if (event.type === 'touchend' || event.type === 'touchstart') event.preventDefault();
+            if (event.type === 'mousedown' || event.type === 'touchstart') { handleAim(event); return; }
+            isShooting = true;
+            const speed = BUBBLE_RADIUS * 0.7;
+            shooterBubble.dx = Math.cos(aimAngle) * speed;
+            shooterBubble.dy = Math.sin(aimAngle) * speed;
+        }
+        
+        canvas.addEventListener('mousemove', handleAim);
+        canvas.addEventListener('touchmove', handleAim, { passive: false });
+        canvas.addEventListener('mousedown', handleShoot);
+        canvas.addEventListener('click', handleShoot);
+        canvas.addEventListener('touchstart', handleShoot, { passive: false });
+        canvas.addEventListener('touchend', handleShoot, { passive: false });
+
+        restartButtonGameOver.addEventListener('click', () => restartGame(true));
+        restartButtonMain.addEventListener('click', () => restartGame(true));
+        
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                // On resize, we don't want a full game reset, just adapt sizes
+                restartGame(false); // Call with fullReset = false
+            }, 250);
+        });
+
+        // --- Fullscreen API ---
+        function openFullscreen(elem) {
+            if (elem.requestFullscreen) elem.requestFullscreen();
+            else if (elem.mozRequestFullScreen) elem.mozRequestFullScreen(); /* Firefox */
+            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen(); /* Chrome, Safari & Opera */
+            else if (elem.msRequestFullscreen) elem.msRequestFullscreen(); /* IE/Edge */
+        }
+
+        function closeFullscreen() {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            else if (document.msExitFullscreen) document.msExitFullscreen();
+        }
+
+        function toggleFullscreen() {
+            const elem = document.documentElement; // Fullscreen the whole page
+            if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+                openFullscreen(elem);
+            } else {
+                closeFullscreen();
+            }
+        }
+
+        fullscreenButton.addEventListener('click', toggleFullscreen);
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
+                fullscreenButton.textContent = 'एग्जिट फ़ुलस्क्रीन';
+            } else {
+                fullscreenButton.textContent = 'फ़ुलस्क्रीन';
+            }
+            // Adapt game to new screen dimensions without full reset
+            restartGame(false); // Call with fullReset = false
+        }
+        // --- End Fullscreen API ---
+
+
+        let animationFrameId;
+        function gameLoop() {
+            if (gameOver) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawGrid();
+                if (shooterBubble) shooterBubble.draw(); // Draw final shooter position if game over during shot
+                return; 
+            }
+
+            if (isShooting && shooterBubble) {
+                shooterBubble.update();
+                checkCollisions();
+            }
+            
+            let activeBubblesExist = false;
+            let bubblesPopping = false;
+            for (let r = 0; r < TOTAL_GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if (grid[r] && grid[r][c]) {
+                        activeBubblesExist = true;
+                        if (grid[r][c].popping) {
+                            bubblesPopping = true;
+                            grid[r][c].draw(); // Draw for pop animation
+                            if (grid[r][c].popAnimation >= 1) {
+                                grid[r][c] = null;
+                            }
+                        } else if (grid[r][c].isFalling) {
+                            grid[r][c].update();
+                            if (grid[r][c].y > canvas.height + grid[r][c].radius) {
+                                grid[r][c] = null;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Check for game over if any bubble reaches bottom
+            for (let c = 0; c < GRID_COLS; c++) {
+                if (grid[GRID_ROWS -1] && grid[GRID_ROWS -1][c] && !grid[GRID_ROWS -1][c].popping &&
+                    (getBubbleY(GRID_ROWS -1) + BUBBLE_RADIUS > canvas.height - BUBBLE_RADIUS*2.5) ) { // Check if lowest bubble is too low
+                     triggerGameOver();
+                     break;
+                }
+            }
+            
+            // Win condition check (only if not currently popping bubbles)
+            if (!bubblesPopping && !activeBubblesExist && !isShooting && shooterBubble === null) {
+                 console.log("Grid empty, adding new rows.");
+                 addNewRow(); addNewRow(); addNewRow();
+                 if (!gameOver) createShooterBubble(); // Create new shooter after adding rows
+            }
+
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawShooter();
+            drawAimLine();
+            updateScore();
+            
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+        
+        restartGame(true); // Initial full game start
+
+    </script>
+</body>
+</html>
